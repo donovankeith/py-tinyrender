@@ -1,6 +1,6 @@
 # Imports
 from PIL import Image
-from math import floor
+import os.path
 
 # Image Size
 image_width = 256
@@ -16,12 +16,110 @@ red = (255, 0, 0)
 green = (0, 255, 0)
 blue = (0, 0, 255)
 
-# Assign colors
-pixels[100, 100] = red
+class Vector:
+    def __init__(self, x=0.0, y=0.0, z=0.0):
+        self.x = x
+        self.y = y
+        self.z = z
 
-def line(x0, y0, x1, y1, pixels, color): 
-    steps = 1000
-    
+    def __str__(self):
+        return "Vector(%s, %s, %s)" % (self.x, self.y, self.z)
+
+class Polygon:
+    def __init__(self, a, b, c):
+        self.a = a
+        self.b = b
+        self.c = c
+
+    def __str__(self):
+        return "Polygon(%s, %s, %s)" % (self.a, self.b, self.c)
+
+class Model:
+    def __init__(self, filename):
+        self.filename = filename
+
+        self.points = []
+        self.vertex_normals = []
+        self.uv_points = []
+
+        self.polygons = []
+        self.uv_polygons = []
+        self.polygon_normals = []
+
+        script_dir = os.path.dirname(__file__)
+        self.file_path = os.path.join(script_dir, 'obj', filename)
+
+        with open(self.file_path) as f:
+            for line in f:
+                # Find lines of pattern `v 1.0 1.0 1.0`
+                # TODO: Add support for x,y,z,[w]
+                chunks = line.split()
+                if len(chunks) == 4:
+                    typeToken = chunks[0]
+
+                    # Vertices
+                    if typeToken == 'v':
+                        point = Vector(
+                            float(chunks[1]),
+                            float(chunks[2]),
+                            float(chunks[3])
+                        )
+                        self.points.append(point)
+                    # Vertex Normals
+                    elif typeToken == 'vt':
+                        vertex_normal = Vector(
+                            float(chunks[1]),
+                            float(chunks[2]),
+                            float(chunks[3])
+                        )
+                        self.vertex_normals.append(vertex_normal)
+                    # UVW Point Coordinates
+                    elif typeToken == 'vp':
+                        uv_point = Vector(
+                            float(chunks[1]),
+                            float(chunks[2]),
+                            float(chunks[3])
+                        )
+                        self.uv_points.append(uv_point)
+                    # Faces
+                    elif typeToken == 'f':
+                        #TODO: Add support for NGons
+                        # Matching: f 1148/908/1295 1149/907/1294 1150/906/1293
+                        # [Vertex Indices] [UV Point Indices] [Vertex Normal Indices]
+
+                        polygon_chunks = chunks[1].split('/')
+
+                        polygon = Polygon(int(polygon_chunks[0]), int(polygon_chunks[1]), int(polygon_chunks[2]))
+                        self.polygons.append(polygon)
+
+                        uv_chunks = chunks[2].split('/')
+                        uv_polygon = Polygon(uv_chunks[0], uv_chunks[1], uv_chunks[2])
+                        self.uv_polygons.append(uv_polygon)
+
+                        normal_chunks = chunks[3].split('/')
+                        polygon_normal = Polygon(normal_chunks[0], normal_chunks[1], normal_chunks[2])
+                        self.polygon_normals.append(polygon_normal)
+
+        print ("POINTS")
+        for point in self.points:
+            print(point)
+
+        print("POLYGONS")
+        for polygon in self.polygons:
+            print(polygon)
+
+def line(x0, y0, x1, y1, pixels, color):
+    """Draws a line on `pixels` from (x0, y0) to (x1, y1) in `color`.
+
+    Starts at (x0, y0) and then walks in small steps towards (x1, y1)
+    """
+
+    x_steps = abs(x1 - x0)
+    y_steps = abs(y1 - y0)
+
+    # Might result in drawing too many or too few pixels, but it seems like a reasonable compromise.
+    steps = x_steps + y_steps
+
     for step in range(steps):
         t = step/steps
 
@@ -30,7 +128,11 @@ def line(x0, y0, x1, y1, pixels, color):
 
         pixels[int(x), int(y)] = color
 
+woman = Model("businessWoman.obj")
+
 line(10, 10, 255, 255, pixels, red)
+line(0, 0, 255, 0, pixels, green)
+line(128, 164, 60, 60, pixels, blue)
 
 # Flip Top/Bottom so that drawing is done in more intuitive directions.
 image.transpose(Image.FLIP_LEFT_RIGHT)
