@@ -2,24 +2,6 @@
 from PIL import Image
 import os.path
 
-class Vector:
-    def __init__(self, x=0.0, y=0.0, z=0.0):
-        self.x = x
-        self.y = y
-        self.z = z
-
-    def __str__(self):
-        return "Vector(%s, %s, %s)" % (self.x, self.y, self.z)
-
-class Polygon:
-    def __init__(self, a, b, c):
-        self.a = a
-        self.b = b
-        self.c = c
-
-    def __str__(self):
-        return "Polygon(%s, %s, %s)" % (self.a, self.b, self.c)
-
 class Model:
     def __init__(self, filename):
         self.filename = filename
@@ -45,27 +27,27 @@ class Model:
 
                     # Vertices
                     if typeToken == 'v':
-                        point = Vector(
+                        point = [
                             float(chunks[1]),
                             float(chunks[2]),
                             float(chunks[3])
-                        )
+                        ]
                         self.points.append(point)
                     # Vertex Normals
                     elif typeToken == 'vt':
-                        vertex_normal = Vector(
+                        vertex_normal = [
                             float(chunks[1]),
                             float(chunks[2]),
                             float(chunks[3])
-                        )
+                        ]
                         self.vertex_normals.append(vertex_normal)
                     # UVW Point Coordinates
                     elif typeToken == 'vp':
-                        uv_point = Vector(
+                        uv_point = [
                             float(chunks[1]),
                             float(chunks[2]),
                             float(chunks[3])
-                        )
+                        ]
                         self.uv_points.append(uv_point)
                     # Faces
                     elif typeToken == 'f':
@@ -75,15 +57,15 @@ class Model:
 
                         polygon_chunks = chunks[1].split('/')
 
-                        polygon = Polygon(int(polygon_chunks[0]), int(polygon_chunks[1]), int(polygon_chunks[2]))
+                        polygon = [int(polygon_chunks[0]), int(polygon_chunks[1]), int(polygon_chunks[2])]
                         self.polygons.append(polygon)
 
                         uv_chunks = chunks[2].split('/')
-                        uv_polygon = Polygon(uv_chunks[0], uv_chunks[1], uv_chunks[2])
+                        uv_polygon = [uv_chunks[0], uv_chunks[1], uv_chunks[2]]
                         self.uv_polygons.append(uv_polygon)
 
                         normal_chunks = chunks[3].split('/')
-                        polygon_normal = Polygon(normal_chunks[0], normal_chunks[1], normal_chunks[2])
+                        polygon_normal = [normal_chunks[0], normal_chunks[1], normal_chunks[2]]
                         self.polygon_normals.append(polygon_normal)
 
         print ("POINTS")
@@ -132,17 +114,20 @@ def main():
     green = (0, 255, 0)
     blue = (0, 0, 255)
 
-    woman = Model("businessWoman.obj")
+    model = Model("businessWoman.obj")
 
     to_pixel_scalar = 1.0 / 37.5 * 1024.0
 
     # Draw line connecting all points in sequence
-    for a, b in zip(woman.points[:-1], woman.points[1:]):
-        draw_line(a.x * to_pixel_scalar, a.y * to_pixel_scalar, b.x * to_pixel_scalar, b.y * to_pixel_scalar, pixels, blue)
+    for a, b in zip(model.points[:-1], model.points[1:]):
+        draw_line(a[0] * to_pixel_scalar, a[1] * to_pixel_scalar, b[0] * to_pixel_scalar, b[1] * to_pixel_scalar, pixels, blue)
+    #
+    # for polygon in model.polygons:
+    #     a, b, c = polygon
 
     # Overlay points on top
-    for point in woman.points:
-        draw_point(point.x*to_pixel_scalar, point.y*to_pixel_scalar, pixels, green)
+    for point in model.points:
+        draw_point(point[0]*to_pixel_scalar, point[1]*to_pixel_scalar, pixels, green)
 
     # Flip Top/Bottom so that drawing is done in more intuitive directions.
     image.transpose(Image.FLIP_LEFT_RIGHT)
