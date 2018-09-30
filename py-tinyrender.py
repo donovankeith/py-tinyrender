@@ -53,28 +53,28 @@ class Model:
                     elif typeToken == 'f':
                         #TODO: Add support for NGons
                         # Matching: f 1148/908/1295 1149/907/1294 1150/906/1293
-                        # [Vertex Indices] [UV Point Indices] [Vertex Normal Indices]
+                        # [Vert/UV/Normal] [Vert/UV/Normal] [Vert/UV/Normal]
 
-                        polygon_chunks = chunks[1].split('/')
+                        polygon = []
+                        uv_polygon = []
+                        polygon_normal = []
 
-                        polygon = [int(polygon_chunks[0]), int(polygon_chunks[1]), int(polygon_chunks[2])]
+                        # 1148/908/1295 1149/907/1294 1150/906/1293
+                        for chunk in chunks[1:]:
+                            # 1148/908/1295
+                            # [Vert/UV/Normal]
+                            polygon_vert_info = chunk.split('/')
+
+                            # TODO: Add support for polys that don't have all UV and Normal info
+                            # OBJ starts indexes at 1, so subtract 1 to get to 0-based index.
+                            polygon.append(int(polygon_vert_info[0]) - 1)
+                            uv_polygon.append(int(polygon_vert_info[1]) - 1)
+                            polygon_normal.append(int(polygon_vert_info[2]) - 1)
+
+                        # Store polygons
                         self.polygons.append(polygon)
-
-                        uv_chunks = chunks[2].split('/')
-                        uv_polygon = [uv_chunks[0], uv_chunks[1], uv_chunks[2]]
                         self.uv_polygons.append(uv_polygon)
-
-                        normal_chunks = chunks[3].split('/')
-                        polygon_normal = [normal_chunks[0], normal_chunks[1], normal_chunks[2]]
                         self.polygon_normals.append(polygon_normal)
-
-        print ("POINTS")
-        for point in self.points:
-            print(point)
-
-        print("POLYGONS")
-        for polygon in self.polygons:
-            print(polygon)
 
 def draw_point(x, y, pixels, color):
     pixels[int(x), int(y)] = color
@@ -118,19 +118,32 @@ def main():
 
     to_pixel_scalar = 1.0 / 37.5 * 1024.0
 
-    # Draw line connecting all points in sequence
-    for a, b in zip(model.points[:-1], model.points[1:]):
+    # # Draw line connecting all points in sequence
+    # for a, b in zip(model.points[:-1], model.points[1:]):
+    #     draw_line(a[0] * to_pixel_scalar, a[1] * to_pixel_scalar, b[0] * to_pixel_scalar, b[1] * to_pixel_scalar, pixels, blue)
+
+    for polygon in model.polygons:
+        a = model.points[polygon[0]]
+        b = model.points[polygon[1]]
+        c = model.points[polygon[2]]
+
+        # A->B
         draw_line(a[0] * to_pixel_scalar, a[1] * to_pixel_scalar, b[0] * to_pixel_scalar, b[1] * to_pixel_scalar, pixels, blue)
-    #
-    # for polygon in model.polygons:
-    #     a, b, c = polygon
+
+        # B->C
+        draw_line(b[0] * to_pixel_scalar, b[1] * to_pixel_scalar, c[0] * to_pixel_scalar, c[1] * to_pixel_scalar, pixels, blue)
+
+        # C->D
+        draw_line(c[0] * to_pixel_scalar, c[1] * to_pixel_scalar, a[0] * to_pixel_scalar, a[1] * to_pixel_scalar, pixels, blue)
+
+
 
     # Overlay points on top
     for point in model.points:
         draw_point(point[0]*to_pixel_scalar, point[1]*to_pixel_scalar, pixels, green)
 
     # Flip Top/Bottom so that drawing is done in more intuitive directions.
-    image.transpose(Image.FLIP_LEFT_RIGHT)
+    image.transpose(Image.FLIP_TOP_BOTTOM)
 
     image.show()
 
