@@ -2,20 +2,6 @@
 from PIL import Image
 import os.path
 
-# Image Size
-image_width = 256
-image_height = 256
-
-image = Image.new('RGB', (image_width, image_height), "black")
-pixels = image.load()
-
-# Preset colors
-black = (0, 0, 0)
-white = (255, 255, 255)
-red = (255, 0, 0)
-green = (0, 255, 0)
-blue = (0, 0, 255)
-
 class Vector:
     def __init__(self, x=0.0, y=0.0, z=0.0):
         self.x = x
@@ -108,7 +94,10 @@ class Model:
         for polygon in self.polygons:
             print(polygon)
 
-def line(x0, y0, x1, y1, pixels, color):
+def draw_point(x, y, pixels, color):
+    pixels[int(x), int(y)] = color
+
+def draw_line(x0, y0, x1, y1, pixels, color):
     """Draws a line on `pixels` from (x0, y0) to (x1, y1) in `color`.
 
     Starts at (x0, y0) and then walks in small steps towards (x1, y1)
@@ -118,7 +107,7 @@ def line(x0, y0, x1, y1, pixels, color):
     y_steps = abs(y1 - y0)
 
     # Might result in drawing too many or too few pixels, but it seems like a reasonable compromise.
-    steps = x_steps + y_steps
+    steps = int(x_steps + y_steps)
 
     for step in range(steps):
         t = step/steps
@@ -128,13 +117,37 @@ def line(x0, y0, x1, y1, pixels, color):
 
         pixels[int(x), int(y)] = color
 
-woman = Model("businessWoman.obj")
+def main():
+    # Image Size
+    image_width = 1024
+    image_height = 1024
 
-line(10, 10, 255, 255, pixels, red)
-line(0, 0, 255, 0, pixels, green)
-line(128, 164, 60, 60, pixels, blue)
+    image = Image.new('RGB', (image_width, image_height), "black")
+    pixels = image.load()
 
-# Flip Top/Bottom so that drawing is done in more intuitive directions.
-image.transpose(Image.FLIP_LEFT_RIGHT)
+    # Preset colors
+    black = (0, 0, 0)
+    white = (255, 255, 255)
+    red = (255, 0, 0)
+    green = (0, 255, 0)
+    blue = (0, 0, 255)
 
-image.show()
+    woman = Model("businessWoman.obj")
+
+    to_pixel_scalar = 1.0 / 37.5 * 1024.0
+
+    # Draw line connecting all points in sequence
+    for a, b in zip(woman.points[:-1], woman.points[1:]):
+        draw_line(a.x * to_pixel_scalar, a.y * to_pixel_scalar, b.x * to_pixel_scalar, b.y * to_pixel_scalar, pixels, blue)
+
+    # Overlay points on top
+    for point in woman.points:
+        draw_point(point.x*to_pixel_scalar, point.y*to_pixel_scalar, pixels, green)
+
+    # Flip Top/Bottom so that drawing is done in more intuitive directions.
+    image.transpose(Image.FLIP_LEFT_RIGHT)
+
+    image.show()
+
+if __name__ == "__main__":
+    main()
